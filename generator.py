@@ -11,7 +11,15 @@ def build_model(src: str, state_size: int = 3, should_export: bool = True,
     with open(src) as f:
         src_text = f.read()
         f.close()
-    # TODO: if hash(text) exists
+
+    digest = hashlib.sha256(src_text.encode()).hexdigest()
+    cache_filename = os.path.join(export_path, digest + '.json')
+
+    if os.path.exists(cache_filename):
+        with open(cache_filename) as f:
+            cache = f.read()
+            f.close()
+        return cache
 
     text = src_text \
         .replace("?", "？") \
@@ -25,9 +33,8 @@ def build_model(src: str, state_size: int = 3, should_export: bool = True,
     model_json = markovify.NewlineText(joined_data, state_size=state_size).to_json()
 
     if should_export:
-        filename = str(hashlib.sha256(src_text.encode()).hexdigest()) + '.json'
         os.makedirs(export_path, exist_ok=True)
-        with open(os.path.join(export_path, filename), mode="w") as f:
+        with open(cache_filename, mode="w") as f:
             f.write(model_json)
             f.close()
 
